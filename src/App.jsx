@@ -151,20 +151,21 @@ export default function CellerVentura(){
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch('/api/scan-wine', {
+       const res = await fetch('/api/scan-wine', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ image: b64, mediaType: 'image/jpeg' })
       });
       const d = await res.json();
+      if (d.error) { throw new Error(d.error); }
       const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
       const parsed = JSON.parse(t.replace(/```json|```/g,'').trim());
       setScanning(false);
       if(parsed.error || !parsed.name){ showToast("No s'ha pogut llegir l'etiqueta"); setScannerOpen(false); return; }
       setScanResult(parsed);
-    } catch(err){
+     } catch(err){
       setScanning(false);
-      showToast('Error analitzant la imatge');
+      showToast('Error: ' + err.message);
       setScannerOpen(false);
     }
     e.target.value = '';
