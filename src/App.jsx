@@ -130,19 +130,15 @@ export default function CellerVentura(){
     reader.onload = async (ev) => {
       const b64 = ev.target.result.split(',')[1];
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 200,
-            messages: [{ role: 'user', content: [
-              { type:'image', source:{ type:'base64', media_type: file.type, data: b64 } },
-              { type:'text', text:'Read this wine bottle label. Reply ONLY with JSON: {"name":"wine name","vintage":2019,"winery":"producer name","region":"appellation","type":"tinto|blanco|rosado|cava|champagne|sauternes"} or {"error":"cannot read"}' }
-            ]}]
-          })
-        });
-        const d = await res.json();
+        const res = await fetch('/api/scan-wine', {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({
+    image: b64,
+    mediaType: file.type
+  })
+});
+const d = await res.json();
         const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
         const parsed = JSON.parse(t.replace(/```json|```/g,'').trim());
         setScanning(false);
