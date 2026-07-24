@@ -126,31 +126,47 @@ export default function CellerVentura(){
   async function handleScanFile(e){
     const file = e.target.files[0]; if(!file) return;
     setScanning(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const b64 = ev.target.result.split(',')[1];
-      try {
-        const res = await fetch('/api/scan-wine', {
-  method: 'POST',
-  headers: {'Content-Type':'application/json'},
-  body: JSON.stringify({
-    image: b64,
-    mediaType: file.type
-  })
-});
-const d = await res.json();
-        const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-        const parsed = JSON.parse(t.replace(/```json|```/g,'').trim());
-        setScanning(false);
-        if(parsed.error || !parsed.name){ showToast("No s'ha pogut llegir l'etiqueta"); setScannerOpen(false); return; }
-        setScanResult(parsed);
-      } catch(err){
-        setScanning(false);
-        showToast('Error analitzant la imatge');
-        setScannerOpen(false);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    try {
+      // Comprimir y convertir la imagen a JPEG usando un canvas
+      const b64 = await new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = (ev) => { img.src = ev.target.result; };
+        reader.onerror = reject;
+        img.onload = () => {
+          const MAX = 1200;
+          let { width, height } = img;
+          if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
+          else if (height > MAX) { width *= MAX / height; height = MAX; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await fetch('/api/scan-wine', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ image: b64, mediaType: 'image/jpeg' })
+      });
+      const d = await res.json();
+      const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+      const parsed = JSON.parse(t.replace(/```json|```/g,'').trim());
+      setScanning(false);
+      if(parsed.error || !parsed.name){ showToast("No s'ha pogut llegir l'etiqueta"); setScannerOpen(false); return; }
+      setScanResult(parsed);
+    } catch(err){
+      setScanning(false);
+      showToast('Error analitzant la imatge');
+      setScannerOpen(false);
+    }
     e.target.value = '';
   }
 
