@@ -39,7 +39,24 @@ export default function CellerVentura(){
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncMsg, setSyncMsg] = useState('');
+ const [authed, setAuthed] = useState(null);
+  const [pwd, setPwd] = useState('');
+  const [authError, setAuthError] = useState('');
 
+  useEffect(() => {
+    fetch('/api/check-auth').then(r=>r.json()).then(d=>setAuthed(d.authenticated)).catch(()=>setAuthed(false));
+  }, []);
+
+  async function handleLogin(e){
+    e.preventDefault();
+    setAuthError('');
+    try {
+      const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password:pwd}) });
+      const d = await r.json();
+      if (d.ok) setAuthed(true);
+      else setAuthError(d.error || 'Contrasenya incorrecta');
+    } catch(e){ setAuthError('Error de connexió'); }
+  }
   const [curView, setCurView] = useState('map');
   const [curCellar, setCurCellar] = useState('B1');
   const [curLetter, setCurLetter] = useState('A');
@@ -281,6 +298,33 @@ export default function CellerVentura(){
   const totalUnits = wines.reduce((s,w)=>s+w.units,0);
   const totalValue = wines.filter(w=>w.price||w.marketPrice).reduce((s,w)=>s+(w.marketPrice||w.price||0)*w.units,0);
   const drinkSoonCount = wines.filter(w=>drinkSoon(w)&&w.units>0).length;
+
+if (authed === null) {
+    return (
+      <div style={{minHeight:'100vh',background:'#F2F2F7',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'-apple-system,sans-serif'}}>
+        <div style={{textAlign:'center',color:'#8B1A1A'}}>
+          <div style={{width:36,height:36,border:'3px solid rgba(139,26,26,.15)',borderTopColor:'#8B1A1A',borderRadius:'50%',animation:'spin .7s linear infinite',margin:'0 auto 12px'}}/>
+          <div style={{fontWeight:600}}>Comprovant accés…</div>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  if (authed === false) {
+    return (
+      <div style={{minHeight:'100vh',background:'#F2F2F7',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'-apple-system,sans-serif',padding:20}}>
+        <form onSubmit={handleLogin} style={{background:'#fff',borderRadius:20,padding:'32px 28px',boxShadow:'0 4px 20px rgba(0,0,0,.1)',width:'100%',maxWidth:340,textAlign:'center'}}>
+          <div style={{fontSize:26,fontWeight:800,marginBottom:6}}>Celler <span style={{fontWeight:400,opacity:.55}}>Ventura</span></div>
+          <div style={{fontSize:14,color:'rgba(60,60,67,.55)',marginBottom:24}}>Introdueix la contrasenya per accedir</div>
+          <input type="password" value={pwd} onChange={e=>setPwd(e.target.value)} placeholder="Contrasenya" autoFocus
+            style={{width:'100%',padding:'14px 16px',borderRadius:14,border:'1.5px solid rgba(60,60,67,.15)',fontSize:16,fontFamily:'inherit',outline:'none',marginBottom:14,boxSizing:'border-box'}}/>
+          {authError && <div style={{color:'#FF3B30',fontSize:13,fontWeight:600,marginBottom:14}}>{authError}</div>}
+          <button type="submit" style={{width:'100%',padding:14,background:'#8B1A1A',color:'#fff',border:'none',borderRadius:14,fontFamily:'inherit',fontSize:16,fontWeight:700,cursor:'pointer'}}>Entrar</button>
+        </form>
+      </div>
+    );
+  }
 
   if(loading){
     return (

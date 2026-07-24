@@ -1,18 +1,24 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+import crypto from 'crypto';
 
-  if (!process.env.VITE_ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'FALTA VITE_ANTHROPIC_API_KEY en Vercel Environment Variables' });
-  }
+function isAuthed(req) {
+  const raw = req.headers.cookie || '';
+  const match = raw.split(';').map(s => s.trim()).find(s => s.startsWith('celler_auth='));
+  const token = match ? match.split('=')[1] : null;
+  if (!token) return false;
+  const [payload, sig] = token.split('.');
+  if (!payload || !sig) return false;
+  const expected = crypto.createHmac('sha256', process.env.AUTH_SECRET).update(payload).digest('hex');
+  return sig === expected && Number(payload) >= Date.now();
+}
+
+export default async function handler(req, res) {
+  if (!isAuthed(req)) return res.status(401).json({ error: 'No autoritzat' });
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!process.env.VITE_ANTHROPIC_API_KEY) return res.status(500).json({ error: 'FALTA VITE_ANTHROPIC_API_KEY' });
 
   try {
     const { image, mediaType } = req.body;
-
-    if (!image) {
-      return res.status(400).json({ error: 'No se recibió ninguna imagen' });
-    }
+    if (!image) return res.status(400).json({ error: 'No se recibió ninguna imagen' });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -35,14 +41,9 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
-    // Si Anthropic devuelve un error, lo mandamos claramente al frontend
     if (!response.ok || data.type === 'error') {
-      return res.status(response.status).json({
-        error: `Anthropic API error: ${data.error?.message || JSON.stringify(data)}`
-      });
+      return res.status(response.status).json({ error: `Anthropic API error: ${data.error?.message || JSON.stringify(data)}` });
     }
-
     return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({ error: 'Server error: ' + err.message });
