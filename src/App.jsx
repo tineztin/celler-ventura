@@ -812,9 +812,9 @@ function DetailSheet({ wine, history, onClose, onUpdate, onStock, onDeleteHistor
             {wine.image && <button onClick={()=>onUpdate({image:null})} style={{background:'rgba(255,59,48,.88)',color:'#fff',border:'none',borderRadius:20,padding:'7px 14px',fontFamily:'inherit',fontSize:13,fontWeight:700,cursor:'pointer'}}>🗑 Eliminar</button>}
           </div>
         </div>
-        <div style={{padding:'18px 20px 6px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12}}>
+         <div style={{padding:'18px 20px 6px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,position:'sticky',top:0,background:'#fff',zIndex:10}}>
           <div style={{fontSize:24,fontWeight:800,letterSpacing:'-.5px',lineHeight:1.2,flex:1}}>{wine.name}</div>
-          <button onClick={onClose} style={{width:32,height:32,borderRadius:'50%',background:'#F2F2F7',border:'none',cursor:'pointer',fontSize:18,color:'rgba(60,60,67,.55)',flexShrink:0}}>✕</button>
+          <button onClick={onClose} style={{width:36,height:36,borderRadius:'50%',background:'#F2F2F7',border:'none',cursor:'pointer',fontSize:20,color:'rgba(60,60,67,.55)',flexShrink:0}}>✕</button>
         </div>
 
         {drinkSoon(wine) && (
