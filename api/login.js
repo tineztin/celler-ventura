@@ -16,11 +16,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Contrasenya incorrecta' });
   }
 
-  const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  const expiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
   const payload = String(expiry);
   const sig = sign(payload, process.env.AUTH_SECRET);
   const token = `${payload}.${sig}`;
 
-  res.setHeader('Set-Cookie', `celler_auth=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000; Path=/`);
-  return res.status(200).json({ ok: true });
+  res.setHeader('Set-Cookie', `celler_auth=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=604800; Path=/`);  return res.status(200).json({ ok: true });
 }
