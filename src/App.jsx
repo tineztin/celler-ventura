@@ -24,6 +24,7 @@ const SEED_WINES = [{"id":1,"name":"Les Greffieux","rack":"A","shelf":"1","cella
 
 // ═══════════════════ STORAGE ═══════════════════
 const KEY_WINES = 'celler_ventura_wines';
+const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY;
 const KEY_HISTORY = 'celler_ventura_history';
 
 function drinkSoon(w){
