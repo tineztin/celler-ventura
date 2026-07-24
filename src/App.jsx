@@ -157,9 +157,11 @@ export default function CellerVentura(){
         body: JSON.stringify({ image: b64, mediaType: 'image/jpeg' })
       });
       const d = await res.json();
-      if (d.error) { throw new Error(d.error); }
+        if (d.error) { throw new Error(d.error); }
       const t = d.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-      const parsed = JSON.parse(t.replace(/```json|```/g,'').trim());
+      const match = t.match(/\{[\s\S]*\}/);
+      if (!match) { throw new Error('La IA no ha tornat un JSON vàlid: ' + t.slice(0,100)); }
+      const parsed = JSON.parse(match[0]);
       setScanning(false);
       if(parsed.error || !parsed.name){ showToast("No s'ha pogut llegir l'etiqueta"); setScannerOpen(false); return; }
       setScanResult(parsed);
