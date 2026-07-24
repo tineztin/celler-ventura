@@ -66,15 +66,26 @@ export default function CellerVentura(){
   const [scanResult, setScanResult] = useState(null);
   const [toast, setToastMsg] = useState('');
 
-  // ── LOAD FROM CLOUD ──
+  // ── LOAD FROM SERVER (Redis) ──
   useEffect(() => {
     (async () => {
       try {
-        const w = await window.storage?.get(KEY_WINES, true);
-        if (w && w.value) setWines(JSON.parse(w.value));
-        const h = await window.storage?.get(KEY_HISTORY, true);
-        if (h && h.value) setHistory(JSON.parse(h.value));
-      } catch(e) { /* first run, no data yet */ }
+        const wr = await fetch('/api/data?key=wines');
+        const wd = await wr.json();
+        if (wd.value) {
+          setWines(wd.value);
+        } else {
+          // Primera vegada: guardem la llista inicial al servidor
+          await fetch('/api/data?key=wines', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(SEED_WINES)
+          });
+        }
+        const hr = await fetch('/api/data?key=history');
+        const hd = await hr.json();
+        if (hd.value) setHistory(hd.value);
+      } catch(e) { /* primer ús, sense dades encara */ }
       setLoading(false);
     })();
   }, []);
@@ -82,7 +93,11 @@ export default function CellerVentura(){
   const saveWines = useCallback(async (next) => {
     setWines(next);
     try {
-      await window.storage?.set(KEY_WINES, JSON.stringify(next), true);
+      await fetch('/api/data?key=wines', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(next)
+      });
       setSyncMsg('✓ Sincronitzat');
       setTimeout(()=>setSyncMsg(''), 1500);
     } catch(e) { setSyncMsg('⚠ Error de sincronització'); }
@@ -90,7 +105,13 @@ export default function CellerVentura(){
 
   const saveHistory = useCallback(async (next) => {
     setHistory(next);
-    try { await window.storage?.set(KEY_HISTORY, JSON.stringify(next), true); } catch(e){}
+    try {
+      await fetch('/api/data?key=history', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(next)
+      });
+    } catch(e){}
   }, []);
 
   function showToast(msg){ setToastMsg(msg); setTimeout(()=>setToastMsg(''), 2200); }
